@@ -366,7 +366,7 @@ function renderForm(p){
       <div class="row">
         <div class="field"><label for="f-name">Name</label>
           <div class="namebox"><input id="f-name" required value="${esc(p.name)}" placeholder="Bal d'Afrique" autocomplete="off">
-          <button type="button" class="lookup" id="lookup" ${sampleFn && !isBlend ? "" : "hidden"}>Look up</button></div></div>
+          <button type="button" class="lookup" id="lookup" ${canLookup() && !isBlend ? "" : "hidden"}>Look up</button></div></div>
         <label><span id="house-label">${isBlend ? "Made by" : "House"}</span><input id="f-house" value="${esc(p.house)}" placeholder="${isBlend ? "Me" : "Byredo"}"></label>
       </div>
       <div class="row">
@@ -408,7 +408,7 @@ function renderForm(p){
   $("#sheet").querySelectorAll("[data-season]").forEach(b => b.onclick = () => b.setAttribute("aria-pressed", b.getAttribute("aria-pressed")!=="true"));
   $("#lookup").onclick = lookup;
   $("#f-name").onkeydown = e => { if (e.key==="Enter" && !$("#lookup").hidden){ e.preventDefault(); lookup(); } };
-  $("#f-status").onchange = e => { const b = e.target.value==="blend"; $("#lookup").hidden = b || !sampleFn; if (b) $("#lookup-out").hidden = true;
+  $("#f-status").onchange = e => { const b = e.target.value==="blend"; $("#lookup").hidden = b || !canLookup(); if (b) $("#lookup-out").hidden = true;
     $("#blend-fields").hidden = !b; $("#conc-wrap").hidden = b; $("#house-label").textContent = b ? "Made by" : "House"; };
   $("#addrow").onclick = () => { $("#frows").insertAdjacentHTML("beforeend", frowHTML({unit:"drops"})); $("#frows").lastElementChild.querySelector("input").focus(); };
   $("#frows").onclick = e => { if (e.target.closest(".rm")) e.target.closest(".frow").remove(); };
@@ -446,7 +446,18 @@ function renderForm(p){
 }
 
 /* look up a perfume by name via Claude — runs on the viewer's own account, no API keys in the page */
+/* Outside Claude (e.g. the GitHub Pages site) lookups go to Google Gemini through a small server that holds the key. */
+const LOOKUP_URL = "https://scent-shelf-tau.vercel.app/api/lookup";
 let sampleFn = null, lookupCtl = null;
+const canLookup = () => !!(sampleFn || (!window.claude && LOOKUP_URL.startsWith("https://")));
+async function googleLookup(q, signal){
+  let r;
+  try { r = await fetch(LOOKUP_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({q}), signal}); }
+  catch(e){ throw {code: e.name==="AbortError" ? "cancelled" : "upstream_error"}; }
+  if (r.status === 429) throw {code:"rate_limited"};
+  if (!r.ok) throw {code:"upstream_error"};
+  return (await r.json()).results || [];
+}
 async function lookup(){
   const q = $("#f-name").value.trim(), out = $("#lookup-out"), btn = $("#lookup");
   if (q.length < 2){ out.hidden = false; out.textContent = "Type at least part of a perfume name first."; return; }
@@ -463,7 +474,8 @@ Reply with only a JSON array of up to 3 best matches, most likely first, each:
 Example: [{"name":"Bal d'Afrique","house":"Byredo","year":2009,"family":"Woody","conc":"EDP","size":50,"top":"bergamot, lemon, marigold","heart":"violet, jasmine, cyclamen","base":"vetiver, musk, cedar","seasons":["Spring","Summer"]}]
 If nothing real matches, reply [].`;
   try {
-    const res = await sampleFn.json(prompt, {modelTier:"quick", signal:lookupCtl.signal, cache:{gcTime:864e5}});
+    const res = sampleFn ? await sampleFn.json(prompt, {modelTier:"quick", signal:lookupCtl.signal, cache:{gcTime:864e5}})
+                         : await googleLookup(q, lookupCtl.signal);
     const list = (Array.isArray(res) ? res : []).filter(r => r && r.name).slice(0,3);
     if (!list.length){ out.textContent = `No perfume found for “${q}”. Check the spelling or fill in the details yourself.`; }
     else if (list.length === 1){ applyLookup(list[0]); }
@@ -479,7 +491,7 @@ If nothing real matches, reply [].`;
       session_expired:"You’ve been signed out of Claude. Sign in again, then try again.",
       invalid_json:"The lookup came back garbled. Tap Look up to try again."}[e.code] || "Lookup didn’t work this time. Tap Look up to try again.";
     out.textContent = msg;
-    if (["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(e.code)){ sampleFn = null; btn.hidden = true; }
+    if (sampleFn && ["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(e.code)){ sampleFn = null; btn.hidden = true; }
   } finally { btn.disabled = false; btn.textContent = "Look up"; }
 }
 function applyLookup(r){
