@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Track your perfume collection, wishlist and homemade blends.">
+<style>html{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+<title>Scent Shelf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..600&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#F4F1F4; --surface:#FFFFFF; --surface-2:#EDE7EC; --ink:#231B24; --muted:#6F6471;
+  --line:#E0D8DF; --accent:#6A2D5C; --accent-ink:#FFFFFF; --brass:#A87B2C; --danger:#B3261E; --good:#2F7A4A;
+  --glass:rgba(255,255,255,.55); --glass-edge:rgba(35,27,36,.18); --shadow:0 18px 40px -18px rgba(60,20,55,.35);
+  --display:"Bodoni Moda","Didot","Bodoni 72",Georgia,serif;
+  --body:"Figtree",-apple-system,"Segoe UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --ground:#151116; --surface:#1F1920; --surface-2:#2A222B; --ink:#F2EBF1; --muted:#A99DAA;
+  --line:#352C36; --accent:#D8A7CB; --accent-ink:#1B1219; --brass:#D6AA55; --danger:#F2867E; --good:#7FCB98;
+  --glass:rgba(255,255,255,.07); --glass-edge:rgba(255,255,255,.22); --shadow:0 18px 40px -18px rgba(0,0,0,.7);
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#151116; --surface:#1F1920; --surface-2:#2A222B; --ink:#F2EBF1; --muted:#A99DAA;
+  --line:#352C36; --accent:#D8A7CB; --accent-ink:#1B1219; --brass:#D6AA55; --danger:#F2867E; --good:#7FCB98;
+  --glass:rgba(255,255,255,.07); --glass-edge:rgba(255,255,255,.22); --shadow:0 18px 40px -18px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font:15px/1.5 var(--body);}
+.wrap{max-width:980px;margin:0 auto;padding-inline:16px;padding-block:20px 110px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* header */
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:500;font-size:clamp(34px,7vw,52px);line-height:1;margin:0;letter-spacing:-.01em}
+h1 em{font-style:italic;color:var(--accent)}
+.stats{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:13px;color:var(--muted)}
+.stats b{display:block;font-family:var(--mono);font-weight:500;font-size:17px;color:var(--ink);font-variant-numeric:tabular-nums}
+.seg{display:inline-flex;background:var(--surface-2);border-radius:999px;padding:3px}
+.seg button{border:0;background:none;padding:7px 14px;border-radius:999px;font-weight:500;font-size:13px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+
+.tools{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
+.search{flex:1 1 220px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:0 12px}
+.search input{border:0;background:none;padding:11px 0;width:100%;outline:none}
+.search svg{flex:none;color:var(--muted)}
+select.sort{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-block:14px 4px;scrollbar-width:none;margin-inline:-16px;padding-inline:16px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 13px;font-size:13px;display:inline-flex;align-items:center;gap:7px}
+.chip i{width:9px;height:9px;border-radius:50%;background:var(--c)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+
+.banner{margin-top:14px;font-size:13px;color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.banner button{border:0;background:none;color:var(--accent);font-weight:600;padding:0;text-decoration:underline;text-underline-offset:3px}
+
+/* grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-top:16px}
+.card{all:unset;box-sizing:border-box;cursor:pointer;background:var(--surface);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px;border:1px solid var(--line);transition:transform .2s,box-shadow .2s}
+.card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.stage{height:150px;display:flex;align-items:flex-end;justify-content:center;border-radius:12px;background:radial-gradient(120% 80% at 50% 100%,color-mix(in srgb,var(--c) 22%,transparent),transparent 70%)}
+.house{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.name{font-family:var(--display);font-size:19px;line-height:1.15;font-weight:500;overflow-wrap:anywhere}
+.meta{display:flex;justify-content:space-between;align-items:center;gap:6px;font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:auto}
+.tag{border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+.stars{color:var(--brass);letter-spacing:1px;font-size:12px}
+.empty{grid-column:1/-1;text-align:center;padding:48px 16px;color:var(--muted)}
+.empty strong{display:block;font-family:var(--display);font-size:22px;color:var(--ink);font-weight:500;margin-bottom:4px}
+
+/* bottle */
+.bottle{position:relative;display:flex;flex-direction:column;align-items:center;width:var(--w,70px)}
+.cap{width:42%;height:22%;min-height:18px;background:linear-gradient(90deg,#8c6a2a,#e2c07a 45%,#8c6a2a);border-radius:3px 3px 1px 1px}
+.neck{width:26%;height:7px;background:var(--glass-edge)}
+.body{position:relative;width:100%;height:var(--h,86px);border:1.5px solid var(--glass-edge);background:var(--glass);border-radius:var(--r,10px);overflow:hidden}
+.liquid{position:absolute;inset:auto 0 0 0;height:var(--fill,60%);background:linear-gradient(180deg,color-mix(in srgb,var(--c) 70%,white),var(--c));opacity:.85;transition:height .5s ease}
+.liquid::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:rgba(255,255,255,.45)}
+.body::after{content:"";position:absolute;top:8%;left:12%;width:10%;height:60%;border-radius:4px;background:rgba(255,255,255,.4)}
+.wish .liquid{opacity:.18}
+.wish .body{border-style:dashed}
+
+/* fab */
+.fab{position:fixed;right:16px;bottom:calc(20px + env(safe-area-inset-bottom,0px));border:0;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:14px 20px;font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:var(--shadow)}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(15,8,14,.45);display:flex;align-items:flex-end;justify-content:center;z-index:20;padding-top:env(safe-area-inset-top,0px)}
+.sheet{background:var(--surface);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:22px 20px calc(24px + env(safe-area-inset-bottom,0px))}
+@media (min-width:700px){.scrim{align-items:center}.sheet{border-radius:22px;max-height:88vh}}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .28s cubic-bezier(.2,.8,.2,1)}@keyframes up{from{transform:translateY(40px);opacity:.4}}}
+.sheet-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.x{border:0;background:var(--surface-2);width:34px;height:34px;border-radius:50%;flex:none;font-size:18px;line-height:1}
+.hero{display:flex;gap:18px;align-items:flex-end;margin-top:14px;padding:18px;border-radius:16px;background:radial-gradient(120% 90% at 30% 100%,color-mix(in srgb,var(--c) 26%,transparent),var(--surface-2))}
+.hero .bottle{--w:92px;--h:112px}
+.hero-info{display:flex;flex-direction:column;gap:6px;min-width:0}
+.d-name{font-family:var(--display);font-size:30px;line-height:1.05;font-weight:500;margin:4px 0 0;text-wrap:balance}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-radius:12px;overflow:hidden;margin-top:14px}
+.facts div{background:var(--surface);padding:10px 12px}
+.facts small{display:block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.facts b{font-family:var(--mono);font-weight:500;font-variant-numeric:tabular-nums}
+.pyramid{margin-top:18px;display:flex;flex-direction:column;gap:8px}
+.tier{display:grid;grid-template-columns:62px 1fr;gap:10px;align-items:baseline}
+.tier small{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.notes-list{display:flex;flex-wrap:wrap;gap:6px}
+.notes-list span{background:var(--surface-2);border-radius:999px;padding:3px 10px;font-size:13px}
+.section-label{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:20px 0 8px}
+.my-notes{font-family:var(--display);font-style:italic;font-size:17px;line-height:1.45;margin:0}
+.actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 16px;font-weight:600;font-size:14px}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);flex:1 1 180px}
+.btn.danger{color:var(--danger)}
+.btn.danger.armed{background:var(--danger);color:#fff;border-color:var(--danger)}
+.fillrow{display:flex;align-items:center;gap:12px;margin-top:6px}
+.fillrow input{flex:1;accent-color:var(--brass)}
+.fillrow output{font-family:var(--mono);width:44px;text-align:right}
+
+/* form */
+form{display:flex;flex-direction:column;gap:14px;margin-top:10px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:420px){.row{grid-template-columns:1fr}}
+label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:var(--muted)}
+label input,label select,label textarea{background:var(--ground);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-weight:400;font-size:15px;color:var(--ink);width:100%}
+textarea{resize:vertical;min-height:70px}
+.hint{font-weight:400;font-size:11.5px}
+.rate{display:flex;gap:2px}
+.rate button{border:0;background:none;font-size:26px;line-height:1;padding:2px;color:var(--line)}
+.rate button.on{color:var(--brass)}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:9px 16px;border-radius:999px;font-size:13.5px;z-index:30}
+/* blends */
+.blend .cap{width:30%;background:linear-gradient(90deg,#1e1a1f,#5d565f 45%,#1e1a1f)}
+.blend .body::before{content:"";position:absolute;left:20%;right:20%;top:40%;height:24%;background:#F6F1E7;border-radius:2px;z-index:1;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.pill{font-family:var(--body);font-size:11px;font-weight:600;border-radius:999px;padding:2px 8px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.pill.ready{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.table-wrap{overflow-x:auto;margin-top:6px}
+.formula{width:100%;border-collapse:collapse;font-size:14px}
+.formula th,.formula td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.formula th{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.formula .num{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.formula .ing-note{display:block;font-size:12.5px;color:var(--muted);font-style:italic}
+.pctbar{height:3px;border-radius:2px;background:var(--brass);margin-top:5px;margin-left:auto}
+.formula-edit{display:flex;flex-direction:column;gap:12px}
+.frow{display:grid;grid-template-columns:1fr 70px 76px 38px;gap:6px}
+.frow input,.frow select{background:var(--ground);border:1px solid var(--line);border-radius:10px;padding:9px 10px;width:100%;font-size:14px;color:var(--ink);min-width:0}
+.frow .fnote{grid-column:1/4;font-size:13px}
+.frow .rm{border:0;background:var(--surface-2);border-radius:10px;height:38px;font-size:16px}
+.addrow{align-self:flex-start;border:1px dashed var(--line);background:none;border-radius:10px;padding:8px 12px;font-weight:600;font-size:13px;color:var(--accent)}
+.field{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:var(--muted)}
+.namebox{display:flex;gap:6px}
+.namebox input{flex:1;min-width:0;background:var(--ground);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-weight:400;font-size:15px;color:var(--ink)}
+.lookup{flex:none;border:1px solid var(--accent);background:none;color:var(--accent);border-radius:10px;padding:0 12px;font-weight:600;font-size:13px}
+.lookup:disabled{opacity:.5;cursor:wait}
+.lookup-out{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:8px;margin-top:-4px}
+.picks{display:flex;flex-direction:column;gap:6px}
+.pick{all:unset;box-sizing:border-box;cursor:pointer;border:1px solid var(--line);border-radius:10px;padding:9px 12px;color:var(--ink);font-size:14px;display:flex;justify-content:space-between;gap:10px}
+.pick:hover,.pick:focus-visible{border-color:var(--accent)}
+.pick small{color:var(--muted);font-size:12px;white-space:nowrap}
+.fieldset{display:flex;flex-direction:column;gap:14px;padding:14px;border-radius:14px;background:var(--surface-2)}
+.fieldset label input,.fieldset .frow input,.fieldset .frow select{background:var(--surface)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Scent <em>Shelf</em></h1>
+      <div class="stats" id="stats"></div>
+    </div>
+    <div class="seg" role="group" aria-label="View">
+      <button id="v-owned" aria-pressed="true">My shelf</button>
+      <button id="v-wish" aria-pressed="false">Wishlist</button>
+      <button id="v-blend" aria-pressed="false">My blends</button>
+    </div>
+  </header>
+
+  <div class="tools">
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Search name, house or note (e.g. vanilla)" aria-label="Search">
+    </div>
+    <select id="sort" class="sort" aria-label="Sort">
+      <option value="recent">Recently added</option>
+      <option value="worn">Most worn</option>
+      <option value="rating">Highest rated</option>
+      <option value="empty">Running low</option>
+      <option value="name">A–Z</option>
+    </select>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div class="banner" id="banner" hidden></div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<button class="fab" id="add"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>Add perfume</button>
+
+<div class="scrim" id="scrim" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const FAMILIES = {
+  Floral:"#D77FA1", Woody:"#8A6A45", Amber:"#C9822B", Fresh:"#5FB0B7", Citrus:"#E0B83A",
+  Gourmand:"#A0613F", Aromatic:"#6F9A5B", Chypre:"#6C7A45", Leather:"#5B3A2E", Musky:"#B7A3C9"
+};
+const CONCS = ["Parfum","Extrait","EDP","EDT","EDC","Oil"];
+const SEASONS = ["Spring","Summer","Fall","Winter"];
+const SHAPES = [{w:70,h:86,r:"10px"},{w:62,h:96,r:"30px 30px 8px 8px"},{w:80,h:74,r:"40%"},{w:58,h:100,r:"4px"},{w:74,h:82,r:"22px"}];
+
+const $ = s => document.querySelector(s);
+let items = [], db = null, col = null, local = false;
+const state = {view:"owned", family:null, q:"", sort:"recent", open:null, editing:null};
+try { const s = JSON.parse(localStorage.getItem("shelf-ui")||"{}"); Object.assign(state, {view:s.view||"owned", sort:s.sort||"recent"}); } catch(e){}
+function saveUI(){ try{ localStorage.setItem("shelf-ui", JSON.stringify({view:state.view, sort:state.sort})); }catch(e){} }
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const hash = s => [...String(s)].reduce((a,c)=>(a*31+c.charCodeAt(0))>>>0,7);
+const splitNotes = s => String(s||"").split(",").map(x=>x.trim()).filter(Boolean);
+const stars = n => "★".repeat(Math.round(n||0)) + "☆".repeat(5-Math.round(n||0));
+const today = () => new Date().toISOString().slice(0,10);
+const UNITS = ["drops","ml","g"];
+const BLEND_SHAPE = {w:66,h:84,r:"46% 46% 14px 14px"};
+const fmtDate = d => d ? new Date(d+"T00:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}) : "–";
+function readyInfo(p){
+  if (!p.batchDate) return null;
+  const ready = new Date(p.batchDate+"T00:00:00"); ready.setDate(ready.getDate() + 7*(Number(p.macerate)||0));
+  const days = Math.ceil((ready - new Date(today()+"T00:00:00"))/864e5);
+  const iso = `${ready.getFullYear()}-${String(ready.getMonth()+1).padStart(2,"0")}-${String(ready.getDate()).padStart(2,"0")}`;
+  return {days, date:iso};
+}
+function readyPill(p){
+  const r = readyInfo(p); if (!r) return "";
+  return r.days > 0 ? `<span class="pill">Resting · ${r.days}d left</span>` : `<span class="pill ready">Ready to wear</span>`;
+}
+function formulaTotals(f){
+  const rows = (f||[]).filter(r => r.ingredient);
+  const units = new Set(rows.map(r => r.unit||"drops"));
+  const total = rows.reduce((a,r)=>a+(Number(r.amount)||0),0);
+  return {rows, sameUnit: units.size===1, unit:[...units][0], total};
+}
+function ago(d){ if(!d) return "Never worn"; const days = Math.round((new Date(today()) - new Date(d))/864e5);
+  return days<=0 ? "Worn today" : days===1 ? "Worn yesterday" : `Worn ${days} days ago`; }
+
+function bottleHTML(p, big){
+  const sh = p.status==="blend" ? BLEND_SHAPE : SHAPES[hash(p.id||p.name) % SHAPES.length];
+  const c = FAMILIES[p.family] || "#999";
+  const scale = big ? 1.3 : 1;
+  return `<div class="bottle ${p.status==="wishlist"?"wish":p.status==="blend"?"blend":""}" style="--c:${c};--w:${sh.w*scale}px;--h:${sh.h*scale}px;--r:${sh.r};--fill:${p.status==="wishlist"?100:(p.fill??100)}%">
+    <div class="cap"></div><div class="neck"></div><div class="body"><div class="liquid"></div></div></div>`;
+}
+
+function visible(){
+  const q = state.q.toLowerCase();
+  let list = items.filter(p => (p.status||"owned") === state.view)
+    .filter(p => !state.family || p.family === state.family)
+    .filter(p => !q || [p.name,p.house,p.top,p.heart,p.base,p.family,p.notes,...(p.formula||[]).map(r=>(r.ingredient||"")+" "+(r.note||""))].join(" ").toLowerCase().includes(q));
+  const by = {
+    recent:(a,b)=>(b.createdAt||"").localeCompare(a.createdAt||""),
+    worn:(a,b)=>(b.wears||0)-(a.wears||0),
+    rating:(a,b)=>(b.rating||0)-(a.rating||0),
+    empty:(a,b)=>(a.fill??100)-(b.fill??100),
+    name:(a,b)=>(a.name||"").localeCompare(b.name||"")
+  }[state.sort];
+  return list.sort(by);
+}
+
+function render(){
+  $("#v-owned").setAttribute("aria-pressed", state.view==="owned");
+  $("#v-wish").setAttribute("aria-pressed", state.view==="wishlist");
+  $("#v-blend").setAttribute("aria-pressed", state.view==="blend");
+  $("#add").lastChild.textContent = state.view==="blend" ? "New blend" : state.view==="wishlist" ? "Add to wishlist" : "Add perfume";
+  $("#sort").value = state.sort;
+  const owned = items.filter(p => (p.status||"owned")==="owned");
+  const ml = owned.reduce((s,p)=> s + (Number(p.size)||0)*((p.fill??100)/100), 0);
+  const top = [...owned].sort((a,b)=>(b.wears||0)-(a.wears||0))[0];
+  const low = owned.filter(p => (p.fill??100) <= 20).length;
+  const blends = items.filter(p => p.status==="blend").length;
+  $("#stats").innerHTML = `
+    <span><b>${owned.length}</b>bottles</span>
+    <span><b>${Math.round(ml)} ml</b>left to wear</span>
+    <span><b>${low}</b>running low</span>
+    ${top && top.wears ? `<span><b>${esc(top.name)}</b>most worn</span>` : ""}
+    ${blends ? `<span><b>${blends}</b>own blends</span>` : ""}`;
+
+  const fams = [...new Set(items.filter(p=>(p.status||"owned")===state.view).map(p=>p.family))].filter(Boolean);
+  $("#chips").innerHTML = `<button class="chip" data-f="" aria-pressed="${!state.family}">All</button>` +
+    fams.map(f=>`<button class="chip" data-f="${esc(f)}" style="--c:${FAMILIES[f]}" aria-pressed="${state.family===f}"><i></i>${esc(f)}</button>`).join("");
+
+  const samples = items.filter(p=>p.sample).length;
+  const b = $("#banner");
+  if (local || samples){
+    b.hidden = false;
+    b.innerHTML = (samples ? `<span>These ${samples} bottles are examples to show how it works.</span><button id="clear-samples">Remove examples</button>` : "")
+      + (local ? `<span>Saving on this device only.</span>` : "");
+  } else b.hidden = true;
+
+  const list = visible();
+  $("#grid").innerHTML = list.length ? list.map(p => `
+    <button class="card" data-id="${esc(p.id)}" style="--c:${FAMILIES[p.family]||"#999"}">
+      <div class="stage">${bottleHTML(p)}</div>
+      <div><div class="house">${esc(p.status==="blend" ? (p.house||"My blend") : p.house)}</div><div class="name">${esc(p.name)}</div></div>
+      <div class="meta">${p.status==="blend"
+        ? `<span class="tag">v${esc(p.version||1)} · ${esc(p.size||"?")}ml</span>${readyPill(p)}`
+        : `<span class="tag">${esc(p.conc||"EDP")} · ${esc(p.size||"?")}ml</span>
+        ${p.status==="wishlist" ? "" : `<span class="stars" aria-label="${p.rating||0} of 5">${stars(p.rating)}</span>`}`}</div>
+    </button>`).join("")
+    : `<div class="empty"><strong>${state.q||state.family ? "No matches" : state.view==="wishlist" ? "Nothing on the wishlist yet" : state.view==="blend" ? "No blends yet" : "Your shelf is empty"}</strong>
+       ${state.q||state.family ? "Try another note or clear the filter." : state.view==="blend" ? "Tap “New blend” to log your first formula." : "Tap “Add perfume” to add your first bottle."}</div>`;
+
+  if (state.open && !state.editing) renderDetail();
+}
+
+function renderDetail(){
+  const p = items.find(x => x.id === state.open);
+  if (!p) return closeSheet();
+  const c = FAMILIES[p.family] || "#999";
+  const wish = p.status === "wishlist", blend = p.status === "blend";
+  const ft = formulaTotals(p.formula), ri = readyInfo(p);
+  $("#sheet").innerHTML = `
+    <div class="sheet-head"><span class="house">${esc(p.family)} · ${blend ? "My blend v"+esc(p.version||1) : esc(p.conc)}</span><button class="x" data-close aria-label="Close">×</button></div>
+    <div class="hero" style="--c:${c}">${bottleHTML(p,true)}
+      <div class="hero-info"><div class="house">${esc(blend ? (p.house||"My blend") : p.house)}</div><h2 class="d-name">${esc(p.name)}</h2>
+      ${wish ? "" : `<span class="stars" style="font-size:16px">${stars(p.rating)}</span>`}</div></div>
+    <div class="facts">
+      <div><small>Bottle</small><b>${esc(p.size||"–")} ml</b></div>
+      ${blend ? `<div><small>Made</small><b>${fmtDate(p.batchDate)}</b></div><div><small>Strength</small><b>${p.dilution ? esc(p.dilution)+"%" : "–"}</b></div>`
+        : wish ? `<div><small>Price</small><b>${p.price ? "$"+esc(p.price) : "–"}</b></div><div><small>Seasons</small><b>${(p.seasons||[]).length||"–"}</b></div>`
+        : `<div><small>Worn</small><b>${p.wears||0}×</b></div><div><small>Left</small><b>${Math.round((p.size||0)*(p.fill??100)/100)} ml</b></div>`}
+    </div>
+    ${wish ? "" : `<div class="section-label">How full · <span style="text-transform:none;letter-spacing:0">${ago(p.lastWorn)}</span></div>
+      ${blend && ri ? `<p style="margin:0 0 4px;font-size:13.5px">${ri.days>0 ? `Resting until <b>${fmtDate(ri.date)}</b> (${esc(p.macerate)} weeks)` : `Rested ${esc(p.macerate||0)} weeks — ready since ${fmtDate(ri.date)}`}</p>` : ""}
+      <div class="fillrow"><input id="fill-slider" type="range" min="0" max="100" step="5" value="${p.fill??100}" aria-label="Fill level"><output id="fill-out">${p.fill??100}%</output></div>`}
+    <div class="pyramid">
+      ${[["Top",p.top],["Heart",p.heart],["Base",p.base]].map(([k,v]) => splitNotes(v).length ? `<div class="tier"><small>${k}</small><div class="notes-list">${splitNotes(v).map(n=>`<span>${esc(n)}</span>`).join("")}</div></div>` : "").join("")}
+      ${(p.seasons||[]).length ? `<div class="tier"><small>Season</small><div class="notes-list">${p.seasons.map(s=>`<span>${esc(s)}</span>`).join("")}</div></div>` : ""}
+    </div>
+    ${blend && ft.rows.length ? `<div class="section-label">Formula · ${ft.rows.length} ingredients${ft.sameUnit ? ` · ${+ft.total.toFixed(2)} ${esc(ft.unit)}` : ""}</div>
+      <div class="table-wrap"><table class="formula"><thead><tr><th>Ingredient</th><th class="num">Amount</th>${ft.sameUnit && ft.total ? `<th class="num">Share</th>` : ""}</tr></thead><tbody>
+      ${ft.rows.map(r => { const pct = ft.total ? (Number(r.amount)||0)/ft.total*100 : 0; return `<tr><td>${esc(r.ingredient)}${r.note ? `<span class="ing-note">${esc(r.note)}</span>` : ""}</td>
+        <td class="num">${esc(r.amount??"–")} ${esc(r.unit||"drops")}</td>${ft.sameUnit && ft.total ? `<td class="num">${pct.toFixed(1)}%<div class="pctbar" style="width:${Math.max(4,pct)}%"></div></td>` : ""}</tr>`; }).join("")}
+      </tbody></table></div>` : ""}
+    ${p.notes ? `<div class="section-label">${blend ? "Notes" : "My notes"}</div><p class="my-notes">“${esc(p.notes)}”</p>` : ""}
+    <div class="actions">
+      ${wish ? `<button class="btn primary" data-act="bought">I bought it — move to shelf</button>` : `<button class="btn primary" data-act="wear">Wore it today</button>`}
+      ${blend ? `<button class="btn" data-act="version">New version</button>` : ""}
+      <button class="btn" data-act="edit">Edit</button>
+      <button class="btn danger" data-act="del">Delete</button>
+    </div>`;
+  $("#scrim").hidden = false;
+}
+
+function renderForm(p){
+  p = p || (state.view==="blend"
+    ? {status:"blend", family:"Floral", size:30, fill:100, rating:0, seasons:[], batchDate:today(), dilution:20, macerate:4, version:1, formula:[{unit:"drops"},{unit:"drops"},{unit:"drops"}]}
+    : {status:state.view, conc:"EDP", family:"Floral", size:50, fill:100, rating:0, seasons:[]});
+  const isBlend = p.status === "blend";
+  const title = p.id ? (isBlend ? "Edit blend" : "Edit perfume") : isBlend ? (p.version > 1 ? `New version · v${p.version}` : "New blend") : "Add a perfume";
+  state.editing = p;
+  let rating = p.rating || 0;
+  $("#sheet").innerHTML = `
+    <div class="sheet-head"><h2 class="d-name" style="font-size:26px;margin:0">${esc(title)}</h2><button class="x" data-close aria-label="Close">×</button></div>
+    <form id="form" novalidate>
+      <div class="row">
+        <div class="field"><label for="f-name">Name</label>
+          <div class="namebox"><input id="f-name" required value="${esc(p.name)}" placeholder="Bal d'Afrique" autocomplete="off">
+          <button type="button" class="lookup" id="lookup" ${sampleFn && !isBlend ? "" : "hidden"}>Look up</button></div></div>
+        <label><span id="house-label">${isBlend ? "Made by" : "House"}</span><input id="f-house" value="${esc(p.house)}" placeholder="${isBlend ? "Me" : "Byredo"}"></label>
+      </div>
+      <div class="row">
+        <label>Scent family<select id="f-family">${Object.keys(FAMILIES).map(f=>`<option ${f===p.family?"selected":""}>${f}</option>`).join("")}</select></label>
+        <label id="conc-wrap" ${isBlend?"hidden":""}>Concentration<select id="f-conc">${CONCS.map(c=>`<option ${c===p.conc?"selected":""}>${c}</option>`).join("")}</select></label>
+      </div>
+      <div class="row">
+        <label>Bottle size (ml)<input id="f-size" type="number" inputmode="numeric" min="1" value="${esc(p.size)}"></label>
+        <label>List<select id="f-status"><option value="owned" ${p.status==="owned"||!p.status?"selected":""}>My shelf</option><option value="wishlist" ${p.status==="wishlist"?"selected":""}>Wishlist</option><option value="blend" ${isBlend?"selected":""}>My blends</option></select></label>
+      </div>
+      <div class="lookup-out" id="lookup-out" hidden></div>
+      <div class="fieldset" id="blend-fields" ${isBlend?"":"hidden"}>
+        <div class="row">
+          <label>Date made<input id="f-batch" type="date" value="${esc(p.batchDate||today())}"></label>
+          <label>Version<input id="f-version" type="number" min="1" inputmode="numeric" value="${esc(p.version||1)}"></label>
+        </div>
+        <div class="row">
+          <label>Strength (% oils)<input id="f-dilution" type="number" min="0" max="100" step="0.5" inputmode="decimal" value="${esc(p.dilution??"")}" placeholder="20"></label>
+          <label>Rest for (weeks)<input id="f-macerate" type="number" min="0" max="52" inputmode="numeric" value="${esc(p.macerate??"")}" placeholder="4"></label>
+        </div>
+        <div class="formula-edit">
+          <div class="section-label" style="margin:0">Formula <span class="hint" style="text-transform:none;letter-spacing:0">— the note under each ingredient is optional</span></div>
+          <div id="frows" class="formula-edit">${(p.formula&&p.formula.length?p.formula:[{unit:"drops"}]).map(frowHTML).join("")}</div>
+          <button type="button" class="addrow" id="addrow">+ Add ingredient</button>
+        </div>
+      </div>
+      <label>Top notes <span class="hint">separate with commas</span><input id="f-top" value="${esc(p.top)}" placeholder="bergamot, pink pepper"></label>
+      <label>Heart notes<input id="f-heart" value="${esc(p.heart)}" placeholder="rose, jasmine"></label>
+      <label>Base notes<input id="f-base" value="${esc(p.base)}" placeholder="vanilla, sandalwood, musk"></label>
+      <div><div class="section-label" style="margin-top:0">Seasons</div><div class="chips" style="margin:0;padding:0">${SEASONS.map(s=>`<button type="button" class="chip" data-season="${s}" aria-pressed="${(p.seasons||[]).includes(s)}">${s}</button>`).join("")}</div></div>
+      <div><div class="section-label" style="margin-top:0">Rating</div><div class="rate" id="rate">${[1,2,3,4,5].map(n=>`<button type="button" data-r="${n}" aria-label="${n} stars" class="${n<=rating?"on":""}">★</button>`).join("")}</div></div>
+      <label>Notes <span class="hint">optional</span><textarea id="f-notes" placeholder="${isBlend ? "What you’d change next time, how it smells after resting, who it’s for…" : "Where you wear it, how long it lasts, compliments…"}">${esc(p.notes)}</textarea></label>
+      <p id="f-err" class="hint" style="color:var(--danger);margin:0" hidden>Add a name so you can find this bottle later.</p>
+      <div class="actions" style="margin-top:4px"><button class="btn primary" type="submit">${p.id ? "Save changes" : isBlend ? "Save blend" : "Add to collection"}</button></div>
+    </form>`;
+  $("#scrim").hidden = false;
+  $("#rate").onclick = e => { const n = +e.target.dataset.r; if(!n) return; rating = rating===n ? 0 : n;
+    [...$("#rate").children].forEach((b,i)=>b.classList.toggle("on", i<rating)); };
+  $("#sheet").querySelectorAll("[data-season]").forEach(b => b.onclick = () => b.setAttribute("aria-pressed", b.getAttribute("aria-pressed")!=="true"));
+  $("#lookup").onclick = lookup;
+  $("#f-name").onkeydown = e => { if (e.key==="Enter" && !$("#lookup").hidden){ e.preventDefault(); lookup(); } };
+  $("#f-status").onchange = e => { const b = e.target.value==="blend"; $("#lookup").hidden = b || !sampleFn; if (b) $("#lookup-out").hidden = true;
+    $("#blend-fields").hidden = !b; $("#conc-wrap").hidden = b; $("#house-label").textContent = b ? "Made by" : "House"; };
+  $("#addrow").onclick = () => { $("#frows").insertAdjacentHTML("beforeend", frowHTML({unit:"drops"})); $("#frows").lastElementChild.querySelector("input").focus(); };
+  $("#frows").onclick = e => { if (e.target.closest(".rm")) e.target.closest(".frow").remove(); };
+  $("#form").onsubmit = async e => {
+    e.preventDefault();
+    const name = $("#f-name").value.trim();
+    if (!name){ $("#f-err").hidden = false; $("#f-name").focus(); return; }
+    const data = {
+      name, house:$("#f-house").value.trim(), family:$("#f-family").value, conc:$("#f-conc").value,
+      size:Number($("#f-size").value)||null, status:$("#f-status").value,
+      top:$("#f-top").value.trim(), heart:$("#f-heart").value.trim(), base:$("#f-base").value.trim(),
+      seasons:[...$("#sheet").querySelectorAll("[data-season][aria-pressed=true]")].map(b=>b.dataset.season),
+      rating, notes:$("#f-notes").value.trim()
+    };
+    if (data.status === "blend"){
+      Object.assign(data, {
+        batchDate:$("#f-batch").value || today(), version:Number($("#f-version").value)||1,
+        dilution:$("#f-dilution").value==="" ? null : Number($("#f-dilution").value),
+        macerate:$("#f-macerate").value==="" ? 0 : Number($("#f-macerate").value),
+        formula:[...$("#frows").querySelectorAll(".frow")].map(r => ({
+          ingredient:r.querySelector(".fi").value.trim(), amount:r.querySelector(".fa").value===""?null:Number(r.querySelector(".fa").value),
+          unit:r.querySelector(".fu").value, note:r.querySelector(".fnote").value.trim()
+        })).filter(r => r.ingredient)
+      });
+      if (!data.house) data.house = "My blend";
+    }
+    const btn = e.submitter; if (btn) btn.disabled = true;
+    try {
+      if (p.id){ await save(p.id, {...p, ...data}); state.open = p.id; }
+      else { const id = await create({...data, fill:100, wears:0, lastWorn:null, createdAt:new Date().toISOString()}); state.open = null; closeSheet(); }
+      toast(p.id ? "Saved" : `Added ${name}`);
+      if (p.id){ state.editing = null; renderDetail(); }
+    } catch(err){ toast(err?.code==="quota_exceeded" ? "Collection is full — delete a few bottles first" : "Couldn’t save — try again"); if (btn) btn.disabled = false; }
+  };
+}
+
+/* look up a perfume by name via Claude — runs on the viewer's own account, no API keys in the page */
+let sampleFn = null, lookupCtl = null;
+async function lookup(){
+  const q = $("#f-name").value.trim(), out = $("#lookup-out"), btn = $("#lookup");
+  if (q.length < 2){ out.hidden = false; out.textContent = "Type at least part of a perfume name first."; return; }
+  lookupCtl?.abort(); lookupCtl = new AbortController();
+  btn.disabled = true; btn.textContent = "Searching…"; out.hidden = false; out.textContent = `Searching for “${q}”…`;
+  const prompt = `You are a fragrance reference. Find real, commercially released perfumes matching this search: "${q.slice(0,120)}"
+Reply with only a JSON array of up to 3 best matches, most likely first, each:
+{"name": string, "house": string, "year": number|null,
+ "family": one of ${JSON.stringify(Object.keys(FAMILIES))},
+ "conc": one of ${JSON.stringify(CONCS)},
+ "size": the most common bottle size in ml (number),
+ "top": comma-separated top notes, "heart": comma-separated heart notes, "base": comma-separated base notes,
+ "seasons": array, subset of ${JSON.stringify(SEASONS)}}
+Example: [{"name":"Bal d'Afrique","house":"Byredo","year":2009,"family":"Woody","conc":"EDP","size":50,"top":"bergamot, lemon, marigold","heart":"violet, jasmine, cyclamen","base":"vetiver, musk, cedar","seasons":["Spring","Summer"]}]
+If nothing real matches, reply [].`;
+  try {
+    const res = await sampleFn.json(prompt, {modelTier:"quick", signal:lookupCtl.signal, cache:{gcTime:864e5}});
+    const list = (Array.isArray(res) ? res : []).filter(r => r && r.name).slice(0,3);
+    if (!list.length){ out.textContent = `No perfume found for “${q}”. Check the spelling or fill in the details yourself.`; }
+    else if (list.length === 1){ applyLookup(list[0]); }
+    else {
+      out.innerHTML = `<span>Which one did you mean?</span><div class="picks">${list.map((r,i)=>`<button type="button" class="pick" data-i="${i}"><span><b>${esc(r.name)}</b> · ${esc(r.house)}</span><small>${esc(r.conc||"")}${r.year ? " · "+esc(r.year) : ""}</small></button>`).join("")}</div>`;
+      out.querySelectorAll(".pick").forEach(b => b.onclick = () => applyLookup(list[+b.dataset.i]));
+    }
+  } catch(e){
+    if (e.code === "cancelled") return;
+    const msg = {not_granted:"Lookup needs permission to use Claude. Reload the page and choose Allow to turn it on.",
+      sampling_disabled:"Lookup isn’t available on this account. You can still fill in the details yourself.",
+      rate_limited:"Too many lookups in a row. Wait a minute, then try again.",
+      session_expired:"You’ve been signed out of Claude. Sign in again, then try again.",
+      invalid_json:"The lookup came back garbled. Tap Look up to try again."}[e.code] || "Lookup didn’t work this time. Tap Look up to try again.";
+    out.textContent = msg;
+    if (["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(e.code)){ sampleFn = null; btn.hidden = true; }
+  } finally { btn.disabled = false; btn.textContent = "Look up"; }
+}
+function applyLookup(r){
+  const set = (id, v) => { if (v != null && v !== "") $(id).value = v; };
+  set("#f-name", r.name); set("#f-house", r.house);
+  if (FAMILIES[r.family]) $("#f-family").value = r.family;
+  if (CONCS.includes(r.conc)) $("#f-conc").value = r.conc;
+  if (Number(r.size) > 0) $("#f-size").value = Math.round(Number(r.size));
+  set("#f-top", Array.isArray(r.top) ? r.top.join(", ") : r.top);
+  set("#f-heart", Array.isArray(r.heart) ? r.heart.join(", ") : r.heart);
+  set("#f-base", Array.isArray(r.base) ? r.base.join(", ") : r.base);
+  const seas = Array.isArray(r.seasons) ? r.seasons : [];
+  if (seas.length) $("#sheet").querySelectorAll("[data-season]").forEach(b => b.setAttribute("aria-pressed", seas.includes(b.dataset.season)));
+  const out = $("#lookup-out"); out.hidden = false;
+  out.textContent = `Filled in ${r.name} by ${r.house}. Check the details, then add your rating and notes.`;
+}
+
+let frowN = 0;
+function frowHTML(r){
+  const n = ++frowN;
+  return `<div class="frow">
+    <input class="fi" id="fi-${n}" aria-label="Ingredient" placeholder="Ingredient" value="${esc(r.ingredient)}">
+    <input class="fa" id="fa-${n}" aria-label="Amount" type="number" min="0" step="any" inputmode="decimal" placeholder="Amt" value="${esc(r.amount??"")}">
+    <select class="fu" id="fu-${n}" aria-label="Unit">${UNITS.map(u=>`<option ${u===(r.unit||"drops")?"selected":""}>${u}</option>`).join("")}</select>
+    <button type="button" class="rm" aria-label="Remove ingredient">×</button>
+    <input class="fnote" id="fn-${n}" aria-label="Ingredient note (optional)" placeholder="Note (optional) — e.g. diluted 10% in alcohol" value="${esc(r.note)}">
+  </div>`;
+}
+function closeSheet(){ $("#scrim").hidden = true; state.open = null; state.editing = null; }
+let tt; function toast(m){ const t=$("#toast"); t.textContent=m; t.hidden=false; clearTimeout(tt); tt=setTimeout(()=>t.hidden=true,2200); }
+
+/* storage: shared db when available, device storage otherwise */
+function strip(p){ const {id, ...rest} = p; return rest; }
+async function create(data){
+  if (col){ const ref = col.doc(); await ref.set(data); return ref.id; }
+  const id = "l" + Date.now().toString(36); items.push({id, ...data}); persistLocal(); render(); return id;
+}
+async function save(id, p){
+  if (col) return col.doc(id).set(strip(p));
+  items = items.map(x => x.id===id ? {...p, id} : x); persistLocal(); render();
+}
+async function patch(id, fields){
+  if (col) return col.doc(id).update(fields);
+  items = items.map(x => x.id===id ? {...x, ...fields} : x); persistLocal(); render();
+}
+async function remove(id){
+  if (col) return col.doc(id).delete();
+  items = items.filter(x => x.id!==id); persistLocal(); render();
+}
+function persistLocal(){ try{ localStorage.setItem("shelf-items", JSON.stringify(items)); }catch(e){} }
+
+/* events */
+$("#v-owned").onclick = () => { state.view="owned"; state.family=null; saveUI(); render(); };
+$("#v-wish").onclick = () => { state.view="wishlist"; state.family=null; saveUI(); render(); };
+$("#v-blend").onclick = () => { state.view="blend"; state.family=null; saveUI(); render(); };
+$("#q").oninput = e => { state.q = e.target.value; render(); };
+$("#sort").onchange = e => { state.sort = e.target.value; saveUI(); render(); };
+$("#chips").onclick = e => { const b = e.target.closest("[data-f]"); if(!b) return; state.family = b.dataset.f || null; render(); };
+$("#grid").onclick = e => { const c = e.target.closest(".card"); if(!c) return; state.open = c.dataset.id; renderDetail(); };
+$("#add").onclick = () => renderForm();
+$("#banner").onclick = async e => {
+  if (e.target.id !== "clear-samples") return;
+  const s = items.filter(p=>p.sample);
+  for (const p of s) await remove(p.id);
+  toast("Examples removed");
+};
+$("#scrim").onclick = e => { if (e.target.id==="scrim" || e.target.closest("[data-close]")) closeSheet(); };
+document.addEventListener("keydown", e => { if (e.key==="Escape" && !$("#scrim").hidden) closeSheet(); });
+let armed = null;
+$("#sheet").addEventListener("click", async e => {
+  const a = e.target.closest("[data-act]")?.dataset.act; if (!a) return;
+  const p = items.find(x => x.id===state.open); if (!p) return;
+  if (a==="edit") return renderForm({...p});
+  if (a==="version"){ const {id, sample, createdAt, ...rest} = p;
+    return renderForm({...rest, version:(Number(p.version)||1)+1, batchDate:today(), fill:100, wears:0, lastWorn:null, formula:(p.formula||[]).map(r=>({...r}))}); }
+  if (a==="wear"){ if (p.lastWorn===today()) return toast("Already logged for today");
+    await patch(p.id, {wears:(p.wears||0)+1, lastWorn:today()}); return toast(`Logged a wear of ${p.name}`); }
+  if (a==="bought"){ await patch(p.id, {status:"owned", fill:100, createdAt:new Date().toISOString()}); state.view="owned"; saveUI(); render(); return toast("Moved to your shelf"); }
+  if (a==="del"){
+    const btn = e.target.closest("button");
+    if (armed !== p.id){ armed = p.id; btn.classList.add("armed"); btn.textContent = "Tap again to delete"; setTimeout(()=>{ if(armed===p.id){ armed=null; btn.classList.remove("armed"); btn.textContent="Delete"; } }, 3000); return; }
+    armed = null; closeSheet(); await remove(p.id); toast(`Deleted ${p.name}`);
+  }
+});
+let fillTimer;
+$("#sheet").addEventListener("input", e => {
+  if (e.target.id !== "fill-slider") return;
+  const v = +e.target.value; $("#fill-out").textContent = v + "%";
+  $("#sheet").querySelector(".hero .body").style.setProperty("--fill", v+"%");
+  const id = state.open; clearTimeout(fillTimer);
+  fillTimer = setTimeout(() => patch(id, {fill:v}), 500);
+});
+
+/* boot */
+render();
+if (window.claude) window.claude.use("sample").then(s => { sampleFn = s; const b = $("#lookup");
+  if (b && s && $("#f-status")?.value !== "blend") b.hidden = false; }).catch(() => {});
+(async () => {
+  db = window.claude ? await window.claude.use("db") : null;
+  if (db){
+    col = db.collection("bottles");
+    col.onSnapshot(snap => { items = snap.docs.map(d => ({id:d.id, ...d.data()})); render(); },
+      () => { toast("Lost connection to your collection — reload to reconnect"); });
+  } else {
+    local = true;
+    try { items = JSON.parse(localStorage.getItem("shelf-items") || "[]"); } catch(e){ items = []; }
+    render();
+  }
+})();
+</script>
+</body>
+</html>
