@@ -3,7 +3,8 @@
 const FAMILIES = ["Floral","Woody","Amber","Fresh","Citrus","Gourmand","Aromatic","Chypre","Leather","Musky"];
 const CONCS = ["Parfum","Extrait","EDP","EDT","EDC","Oil"];
 const SEASONS = ["Spring","Summer","Fall","Winter"];
-const MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
+// Free-tier Gemini models, tried in order when one is busy (503) or rate-limited (429).
+const MODELS = (process.env.GEMINI_MODELS || "gemini-3.6-flash,gemini-3.5-flash,gemini-flash-lite-latest").split(",");
 
 function allowed(origin) {
   return origin === "https://rishikrrontala-bot.github.io"
@@ -36,15 +37,20 @@ Reply with only a JSON array of up to 3 best matches, most likely first. Each it
 If nothing real matches, reply [].`;
 
   try {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_KEY },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { responseMimeType: "application/json", temperature: 0.2 },
-      }),
-    });
-    if (r.status === 429) return res.status(429).json({ error: "busy" });
+    let r;
+    for (const model of MODELS) {
+      r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model.trim()}:generateContent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_KEY },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: "application/json", temperature: 0.2 },
+        }),
+      });
+      if (r.status !== 503 && r.status !== 429 && r.status !== 404) break;
+      console.error("gemini", model, r.status, "- trying next model");
+    }
+    if (r.status === 429 || r.status === 503) return res.status(429).json({ error: "busy" });
     if (!r.ok) { console.error("gemini error", r.status, (await r.text()).slice(0, 300)); return res.status(502).json({ error: "lookup_failed" }); }
     const data = await r.json();
     const text = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || "").join("");

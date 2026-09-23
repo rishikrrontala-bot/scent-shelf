@@ -452,11 +452,11 @@ function renderForm(p){
 }
 
 /* look up a perfume by name via Claude — runs on the viewer's own account, no API keys in the page */
-/* Outside Claude (e.g. the GitHub Pages site) lookups go to Google Gemini through a small server that holds the key. */
+/* Lookups use the free Google Gemini API through a small server that holds the key (works on the website; Claude pages can't reach it). */
 const LOOKUP_URL = "https://scent-shelf-tau.vercel.app/api/lookup";
-let sampleFn = null, lookupCtl = null, typeTimer = null;
+let lookupCtl = null, typeTimer = null;
 const SITE_URL = "https://rishikrrontala-bot.github.io/scent-shelf/";
-const canLookup = () => !!(sampleFn || (!window.claude && LOOKUP_URL.startsWith("https://")));
+const canLookup = () => !window.claude && LOOKUP_URL.startsWith("https://");
 async function googleLookup(q, signal){
   let r;
   try { r = await fetch(LOOKUP_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({q}), signal}); }
@@ -468,29 +468,16 @@ async function googleLookup(q, signal){
 async function lookup(auto){
   const q = $("#f-name").value.trim(), out = $("#lookup-out"), btn = $("#lookup");
   if (q.length < 2){ out.hidden = false; out.textContent = "Type at least part of a perfume name first."; return; }
-  if (!canLookup() && window.claude){
-    try { sampleFn = await window.claude.use("sample"); } catch(e){ sampleFn = null; }
-    if (!sampleFn){
-      out.hidden = false;
-      out.innerHTML = `<span>Lookup isn’t available in this Claude view. It works on the website version: <a href="${SITE_URL}" target="_blank" rel="noopener" style="color:var(--accent)">open Scent Shelf on the web</a>. Or fill in the details yourself.</span>`;
-      return;
-    }
+  if (!canLookup()){
+    if (auto) return;
+    out.hidden = false;
+    out.innerHTML = `<span>Lookup uses the free Google Gemini API, which only works on the website version: <a href="${SITE_URL}" target="_blank" rel="noopener" style="color:var(--accent)">open Scent Shelf on the web</a>. Here, fill in the details yourself.</span>`;
+    return;
   }
   lookupCtl?.abort(); lookupCtl = new AbortController();
   btn.disabled = true; btn.textContent = "Searching…"; out.hidden = false; out.textContent = `Searching for “${q}”…`;
-  const prompt = `You are a fragrance reference. Find real, commercially released perfumes matching this search: "${q.slice(0,120)}"
-Reply with only a JSON array of up to 3 best matches, most likely first, each:
-{"name": string, "house": string, "year": number|null,
- "family": one of ${JSON.stringify(Object.keys(FAMILIES))},
- "conc": one of ${JSON.stringify(CONCS)},
- "size": the most common bottle size in ml (number),
- "top": comma-separated top notes, "heart": comma-separated heart notes, "base": comma-separated base notes,
- "seasons": array, subset of ${JSON.stringify(SEASONS)}}
-Example: [{"name":"Bal d'Afrique","house":"Byredo","year":2009,"family":"Woody","conc":"EDP","size":50,"top":"bergamot, lemon, marigold","heart":"violet, jasmine, cyclamen","base":"vetiver, musk, cedar","seasons":["Spring","Summer"]}]
-If nothing real matches, reply [].`;
   try {
-    const res = sampleFn ? await sampleFn.json(prompt, {modelTier:"quick", signal:lookupCtl.signal, cache:{gcTime:864e5}})
-                         : await googleLookup(q, lookupCtl.signal);
+    const res = await googleLookup(q, lookupCtl.signal);
     const list = (Array.isArray(res) ? res : []).filter(r => r && r.name).slice(0,3);
     if (!list.length){ out.textContent = `No perfume found for “${q}”. Check the spelling or fill in the details yourself.`; }
     else if (list.length === 1 && !auto){ applyLookup(list[0]); }
@@ -500,13 +487,9 @@ If nothing real matches, reply [].`;
     }
   } catch(e){
     if (e.code === "cancelled") return;
-    const msg = {not_granted:"Lookup needs permission to use Claude. Reload the page and choose Allow to turn it on.",
-      sampling_disabled:"Lookup isn’t available on this account. You can still fill in the details yourself.",
-      rate_limited:"Too many lookups in a row. Wait a minute, then try again.",
-      session_expired:"You’ve been signed out of Claude. Sign in again, then try again.",
-      invalid_json:"The lookup came back garbled. Tap Look up to try again."}[e.code] || "Lookup didn’t work this time. Tap Look up to try again.";
+    const msg = e.code === "rate_limited" ? "Google’s free lookup is busy right now. Wait a minute, then try again."
+      : "Lookup didn’t work this time. Tap Look up to try again, or fill in the details yourself.";
     out.textContent = msg;
-    if (sampleFn && ["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(e.code)){ sampleFn = null; }
   } finally { btn.disabled = false; btn.textContent = "Look up"; }
 }
 function applyLookup(r){
@@ -602,8 +585,6 @@ $("#sheet").addEventListener("input", e => {
 
 /* boot */
 render();
-if (window.claude) window.claude.use("sample").then(s => { sampleFn = s; const b = $("#lookup");
-  if (b && s && $("#f-status")?.value !== "blend") b.hidden = false; }).catch(() => {});
 (async () => {
   db = window.claude ? await window.claude.use("db") : null;
   if (db){
