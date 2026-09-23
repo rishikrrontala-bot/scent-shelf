@@ -451,7 +451,6 @@ function renderForm(p){
   };
 }
 
-/* look up a perfume by name via Claude — runs on the viewer's own account, no API keys in the page */
 /* Lookups use the free Google Gemini API through a small server that holds the key (works on the website; Claude pages can't reach it). */
 const LOOKUP_URL = "https://scent-shelf-tau.vercel.app/api/lookup";
 let lookupCtl = null, typeTimer = null;
